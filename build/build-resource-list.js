@@ -16,61 +16,64 @@
  * limitations under the License.
  */
 
-const path = require('path');
-const videoLibrary = require('../src/server/utils/video-library');
-const libraryPath = path.join(__dirname, '..', 'src', 'client', 'videos.json');
+const path = require("path");
+const videoLibrary = require("../src/server/utils/video-library");
+const libraryPath = path.join(__dirname, "..", "src", "client", "videos.json");
 const library = videoLibrary.load(libraryPath);
 
-const hashFileName = require('./plugins/hash').hashFileName;
-const walk = require('walk');
-const ignore = [
-  'sw.js',
-  'cache-manifest.js',
-  '.DS_Store',
-  'home.css',
-];
-const fs = require('fs');
+const hashFileName = require("./plugins/hash").hashFileName;
+const walk = require("walk");
+const ignore = ["sw.js", "cache-manifest.js", ".DS_Store", "home.css"];
+const fs = require("fs");
 const resourceList = [];
 const pathList = [
-  '/?cache|/',
-  '/downloads/',
-  '/settings/',
-  '/404/?cache|/404/'
+  "/?cache|/",
+  "/downloads/",
+  "/settings/",
+  "/404/?cache|/404/",
 ];
 
-const getHomePageAssets = _ => {
+const getHomePageAssets = (_) => {
   const assets = [];
   const NEW_VS_MORE = 4;
   const MAX_WATCH_MORE = 18;
 
-  const featured =
-      videoLibrary.find(library.shows, library.featured.split('/'));
+  console.log("*************************************************************");
+  console.log(library.featured);
+  console.log("*************************************************************");
 
-  assets.push(featured.items.assetPath + '/poster.jpg');
+  const featured = videoLibrary.find(
+    library.shows,
+    library.featured.split("/")
+  );
 
-  const episodes = [...videoLibrary.getNewest(library.shows, {
-        count: NEW_VS_MORE,
-        ignore: library.featured
-      }),
+  assets.push(featured.items.assetPath + "/poster.jpg");
 
-   ...videoLibrary.getMoreEpisodes(library.shows, {
-        count: NEW_VS_MORE,
-        limit: MAX_WATCH_MORE,
-        ignore: library.featured
-      })];
+  const episodes = [
+    ...videoLibrary.getNewest(library.shows, {
+      count: NEW_VS_MORE,
+      ignore: library.featured,
+    }),
 
-  episodes.forEach(e => {
-    assets.push(e.assetPath + '/poster-tiny.jpg');
+    ...videoLibrary.getMoreEpisodes(library.shows, {
+      count: NEW_VS_MORE,
+      limit: MAX_WATCH_MORE,
+      ignore: library.featured,
+    }),
+  ];
+
+  episodes.forEach((e) => {
+    assets.push(e.assetPath + "/poster-tiny.jpg");
   });
 
   return assets;
 };
 
-const walkStaticFiles = _ => {
+const walkStaticFiles = (_) => {
   return new Promise((resolve, reject) => {
-    const walker = walk.walk('./dist/client');
+    const walker = walk.walk("./dist/client");
     const staticFiles = [];
-    walker.on('file', (root, fileStats, next) => {
+    walker.on("file", (root, fileStats, next) => {
       const name = fileStats.name;
       const path = `${root}/${name}`;
 
@@ -78,13 +81,17 @@ const walkStaticFiles = _ => {
         return next();
       }
 
-      root = root.replace(/^\.\/dist\/client/, '/static');
+      root = root.replace(/^\.\/dist\/client/, "/static");
 
-      if (name.endsWith('.js') ||
-          name.endsWith('.css') ||
-          name.endsWith('.json')) {
-        const hashedName =
-            hashFileName(path).replace(/^\.\/dist\/client/, '/static');
+      if (
+        name.endsWith(".js") ||
+        name.endsWith(".css") ||
+        name.endsWith(".json")
+      ) {
+        const hashedName = hashFileName(path).replace(
+          /^\.\/dist\/client/,
+          "/static"
+        );
 
         staticFiles.push(`${hashedName}`);
       } else {
@@ -94,20 +101,17 @@ const walkStaticFiles = _ => {
       next();
     });
 
-    walker.on('end', _ => resolve(staticFiles));
+    walker.on("end", (_) => resolve(staticFiles));
   });
 };
 
-Promise.all([
-  getHomePageAssets(),
-  walkStaticFiles()
-]).then(resources => {
+Promise.all([getHomePageAssets(), walkStaticFiles()]).then((resources) => {
   resourceList.push(...resources[0], ...resources[1]);
 
   const manifest = [
     `const pathManifest = ${JSON.stringify(pathList, null, 2)}\n`,
-    `const cacheManifest = ${JSON.stringify(resourceList, null, 2)};\n`
-  ].join('\n');
+    `const cacheManifest = ${JSON.stringify(resourceList, null, 2)};\n`,
+  ].join("\n");
 
-  fs.writeFileSync('./dist/client/cache-manifest.js', manifest);
+  fs.writeFileSync("./dist/client/cache-manifest.js", manifest);
 });

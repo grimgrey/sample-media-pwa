@@ -15,26 +15,27 @@
  * limitations under the License.
  */
 
-'use strict';
+"use strict";
 
-const fs = require('fs');
+const fs = require("fs");
 
 class VideoLibrary {
-  static load (path) {
-    return JSON.parse(fs.readFileSync(path, 'utf-8'));
+  static load(path) {
+    return JSON.parse(fs.readFileSync(path, "utf-8"));
   }
 
-  static getAllEpisodes (library, sorted, ignore) {
+  static getAllEpisodes(library, sorted, ignore) {
     const allEpisodes = [];
     const showNames = Object.keys(library);
-    showNames.forEach(showName => {
+    showNames.forEach((showName) => {
       allEpisodes.push(
-        ...library[showName].episodes.map(e => {
+        ...library[showName].episodes.map((e) => {
           const eCopy = Object.assign({}, e);
           eCopy.title = `${library[showName].title}: ${e.title}`;
           eCopy.slug = `${library[showName].slug}/${e.slug}`;
           return eCopy;
-        }));
+        })
+      );
     });
 
     if (sorted) {
@@ -44,81 +45,85 @@ class VideoLibrary {
     }
 
     if (ignore) {
-      allEpisodes.splice(allEpisodes.findIndex(e => {
-        return e.slug === ignore;
-      }), 1);
+      allEpisodes.splice(
+        allEpisodes.findIndex((e) => {
+          return e.slug === ignore;
+        }),
+        1
+      );
     }
 
     return allEpisodes;
   }
 
-  static getNewest (library, options) {
+  static getNewest(library, options) {
     let count = options.count;
     let ignore = options.ignore;
 
-    if (typeof count === 'undefined') {
+    if (typeof count === "undefined") {
       count = 4;
     }
 
     return VideoLibrary.getAllEpisodes(library, true, ignore).slice(0, count);
   }
 
-  static getMoreEpisodes (library, options) {
+  static getMoreEpisodes(library, options) {
     let start = options.start;
     let limit = options.limit;
     let ignore = options.ignore;
 
-    if (typeof start === 'undefined') {
+    if (typeof start === "undefined") {
       start = 4;
     }
 
-    if (typeof limit === 'undefined') {
+    if (typeof limit === "undefined") {
       limit = library.length - start;
     }
 
-    return VideoLibrary
-        .getAllEpisodes(library, true, ignore)
-        .slice(start, limit + start);
+    return VideoLibrary.getAllEpisodes(library, true, ignore).slice(
+      start,
+      limit + start
+    );
   }
 
-  static getOtherTitlesInShow (library, showPath, ignore) {
+  static getOtherTitlesInShow(library, showPath, ignore) {
     const show = this.find(library, [showPath]);
     if (!ignore) {
       return show;
     }
 
-    show.items = show.items.filter(s => {
+    show.items = show.items.filter((s) => {
       return `${showPath}/${s.slug}` !== ignore;
     });
 
     return show;
   }
 
-  static find (library, path) {
+  static find(library, path) {
     let breadcrumbs = [];
     let items = library;
     let title;
 
     if (!Array.isArray(library)) {
-      throw new Error('library should be an array of shows');
+      throw new Error("library should be an array of shows");
     }
 
     if (!Array.isArray(path)) {
-      throw new Error('path should be an array of parts');
+      throw new Error("path should be an array of parts");
     }
 
     for (let p = 0; p < path.length; p++) {
-      const item = items.find(i => {
+      const item = items.find((i) => {
         return i.slug === path[p];
       });
 
       if (!item) {
         return {
-          items: []
+          items: [],
         };
       }
 
-      item.href = path.join('/');
+      item.href = path.join("/");
       title = item.title;
       items = item.episodes || item;
       breadcrumbs.push(title);
@@ -127,7 +132,7 @@ class VideoLibrary {
     return {
       title,
       items,
-      breadcrumbs
+      breadcrumbs,
     };
   }
 }
